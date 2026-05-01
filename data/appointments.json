@@ -1,0 +1,122 @@
+[
+  {
+    "id": "apt_1001",
+    "patient_name": "Rahul Verma",
+    "phone": "9876543210",
+    "doctor": "Dr. Anika Shah",
+    "date": "2026-05-01",
+    "time": "11:00",
+    "status": "confirmed",
+    "transcript": "",
+    "summary": "New booking for general physician.",
+    "manager_flag": false
+  },
+  {
+    "id": "apt_1002",
+    "patient_name": "Neha Gupta",
+    "phone": "9123456780",
+    "doctor": "Dr. Rohan Mehta",
+    "date": "2026-05-01",
+    "time": "16:30",
+    "status": "confirmed",
+    "transcript": "",
+    "summary": "Dermatology consult for skin rash.",
+    "manager_flag": false
+  },
+  {
+    "id": "apt_1003",
+    "patient_name": "Amit Joshi",
+    "phone": "9988776655",
+    "doctor": "Dr. Priya Nair",
+    "date": "2026-05-02",
+    "time": "10:30",
+    "status": "confirmed",
+    "transcript": "",
+    "summary": "Pediatrics visit for child fever.",
+    "manager_flag": false
+  },
+  {
+    "id": "apt_1004",
+    "patient_name": "Sana Khan",
+    "phone": "9090909090",
+    "doctor": "Dr. Vivek Rao",
+    "date": "2026-05-02",
+    "time": "18:00",
+    "status": "confirmed",
+    "transcript": "",
+    "summary": "General physician follow-up.",
+    "manager_flag": false
+  },
+  {
+    "id": "apt_1005",
+    "patient_name": "Ritu Sharma",
+    "phone": "9811122233",
+    "doctor": "Dr. Neha Kapoor",
+    "date": "2026-05-03",
+    "time": "16:00",
+    "status": "cancelled",
+    "transcript": "",
+    "summary": "Patient cancelled due to travel.",
+    "manager_flag": false
+  },
+  {
+    "id": "apt_1006",
+    "patient_name": "Karan Malhotra",
+    "phone": "9345678123",
+    "doctor": "Dr. Arjun Iyer",
+    "date": "2026-05-03",
+    "time": "12:00",
+    "status": "confirmed",
+    "transcript": "",
+    "summary": "Pediatrics consult for allergy.",
+    "manager_flag": false
+  },
+  {
+    "id": "apt_1007",
+    "patient_name": "Meera Iyer",
+    "phone": "9001122334",
+    "doctor": "Dr. Anika Shah",
+    "date": "2026-05-04",
+    "time": "10:15",
+    "status": "rescheduled",
+    "transcript": "",
+    "summary": "Rescheduled from 2026-05-03 18:30.",
+    "manager_flag": false
+  },
+  {
+    "id": "apt_1008",
+    "patient_name": "Vikas Singh",
+    "phone": "9765432109",
+    "doctor": "Dr. Rohan Mehta",
+    "date": "2026-05-04",
+    "time": "11:30",
+    "status": "confirmed",
+    "transcript": "",
+    "summary": "Dermatology consult for acne.",
+    "manager_flag": false
+  },
+  {
+    "id": "apt_1009",
+    "patient_name": "Pooja Desai",
+    "phone": "9887766554",
+    "doctor": "Dr. Priya Nair",
+    "date": "2026-05-05",
+    "time": "17:00",
+    "status": "confirmed",
+    "transcript": "",
+    "summary": "Pediatrics routine checkup.",
+    "manager_flag": false
+  },
+  {
+    "id": "apt_1010",
+    "patient_name": "Arvind Menon",
+    "phone": "9123409876",
+    "doctor": "Dr. Vivek Rao",
+    "date": "2026-05-05",
+    "time": "16:45",
+    "status": "confirmed",
+    "transcript": "",
+    "summary": "General physician consult for cough.",
+    "manager_flag": false
+  }
+]

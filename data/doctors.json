@@ -1,0 +1,50 @@
+[
+  {
+    "id": "doc_gp_01",
+    "name": "Dr. Anika Shah",
+    "specialization": "General Physician",
+    "fee": 500,
+    "available_days": ["Mon", "Tue", "Thu", "Sat"],
+    "available_hours": ["10:00-13:00", "16:00-20:00"]
+  },
+  {
+    "id": "doc_derm_01",
+    "name": "Dr. Rohan Mehta",
+    "specialization": "Dermatology",
+    "fee": 700,
+    "available_days": ["Mon", "Wed", "Fri"],
+    "available_hours": ["10:00-13:00", "16:00-19:00"]
+  },
+  {
+    "id": "doc_ped_01",
+    "name": "Dr. Priya Nair",
+    "specialization": "Pediatrics",
+    "fee": 600,
+    "available_days": ["Tue", "Thu", "Sat"],
+    "available_hours": ["10:00-13:00", "16:00-20:00"]
+  },
+  {
+    "id": "doc_gp_02",
+    "name": "Dr. Vivek Rao",
+    "specialization": "General Physician",
+    "fee": 500,
+    "available_days": ["Mon", "Wed", "Fri", "Sat"],
+    "available_hours": ["10:00-13:00", "16:00-20:00"]
+  },
+  {
+    "id": "doc_derm_02",
+    "name": "Dr. Neha Kapoor",
+    "specialization": "Dermatology",
+    "fee": 700,
+    "available_days": ["Tue", "Thu"],
+    "available_hours": ["16:00-20:00"]
+  },
+  {
+    "id": "doc_ped_02",
+    "name": "Dr. Arjun Iyer",
+    "specialization": "Pediatrics",
+    "fee": 600,
+    "available_days": ["Mon", "Wed", "Fri"],
+    "available_hours": ["10:00-13:00"]
+  }
+]
