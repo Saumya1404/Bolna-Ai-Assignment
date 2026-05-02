@@ -2,11 +2,16 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from uuid import uuid4
 
+import httpx
 from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 
 from . import schemas, storage
+from .config import BOLNA_AGENT_ID, BOLNA_API_KEY, BOLNA_BASE_URL
 
+
+# ── Lifespan ──────────────────────────────────────────────────────────────────
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -20,6 +25,16 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="CarePlus Clinic API", lifespan=lifespan)
 DOCTORS: list[dict] = []
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _parse_date(value: str):
     if not value:
@@ -144,7 +159,7 @@ def _find_alternatives(
     return alternatives
 
 
-# ── Doctors ──────────────────────────────────────────────────────────────────
+# ── Doctors ───────────────────────────────────────────────────────────────────
 
 @app.get("/api/doctors")
 def list_doctors(specialization: str | None = Query(default=None)):
@@ -277,30 +292,48 @@ def get_appointment(
     return [schemas.Appointment(**row) for row in appointments]
 
 
-# ── Appointment update ────────────────────────────────────────────────────────
+# ── Appointments list (filterable, for dashboard) ─────────────────────────────
 
-@app.api_route(
-    "/api/appointment/{appointment_id}",
-    methods=["GET", "POST", "PATCH"],
-    response_model=schemas.Appointment,
-)
-async def update_appointment(
+@app.get("/api/appointments", response_model=list[schemas.Appointment])
+def list_appointments(
+    status: str | None = Query(default=None),
+    date: str | None = Query(default=None),
+    doctor: str | None = Query(default=None),
+):
+    rows = storage.list_appointments()
+    if status:
+        rows = [r for r in rows if r["status"] == status]
+    if date:
+        rows = [r for r in rows if r["date"] == date]
+    if doctor:
+        rows = [r for r in rows if r["doctor"].lower() == doctor.lower()]
+    return [schemas.Appointment(**r) for r in rows]
+
+
+# ── Appointment update (Bolna-safe: POST, no path params) ────────────────────
+
+@app.api_route("/api/appointment/update", methods=["GET", "POST"], response_model=schemas.Appointment)
+async def update_appointment_post(
     request: Request,
-    appointment_id: str,
+    appointment_id: str | None = Query(default=None),
     date: str | None = Query(default=None),
     time: str | None = Query(default=None),
     doctor: str | None = Query(default=None),
     status: str | None = Query(default=None),
 ):
-    if request.method in ("POST", "PATCH"):
+    if request.method == "POST":
         try:
             body = await request.json()
+            appointment_id = body.get("appointment_id", appointment_id)
             date = body.get("date", date)
             time = body.get("time", time)
             doctor = body.get("doctor", doctor)
             status = body.get("status", status)
         except Exception:
             pass
+
+    if not appointment_id:
+        raise HTTPException(status_code=400, detail="appointment_id is required")
 
     existing = storage.list_appointments(appointment_id=appointment_id)
     if not existing:
@@ -333,27 +366,139 @@ async def update_appointment(
     return schemas.Appointment(**updated)
 
 
-# ── Appointment deletion ────────────────────────────────────────────────────────
+# ── Appointment cancel (clean alias for frontend) ─────────────────────────────
 
-@app.delete("/api/appointment/{appointment_id}")
-async def delete_appointment_api(appointment_id: str):
+@app.post("/api/appointment/{appointment_id}/cancel", response_model=schemas.Appointment)
+def cancel_appointment(appointment_id: str):
     existing = storage.list_appointments(appointment_id=appointment_id)
-    
     if not existing:
         raise HTTPException(status_code=404, detail="Appointment not found")
+    storage.update_appointment(appointment_id, {"status": "cancelled"})
+    updated = storage.list_appointments(appointment_id=appointment_id)[0]
+    return schemas.Appointment(**updated)
 
+
+# ── Appointment delete ────────────────────────────────────────────────────────
+
+@app.delete("/api/appointment/{appointment_id}")
+def delete_appointment(appointment_id: str):
+    existing = storage.list_appointments(appointment_id=appointment_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Appointment not found")
     storage.delete_appointment(appointment_id)
+    return {"message": "Appointment deleted successfully", "appointment_id": appointment_id}
 
-    return {
-        "message": "Appointment deleted successfully",
-        "appointment_id": appointment_id
+
+# ── Callback request ──────────────────────────────────────────────────────────
+
+@app.post("/api/callback-request")
+async def callback_request(
+    phone: str = Query(...),
+    patient_name: str | None = Query(default=None),
+):
+    record = {
+        "id": f"apt_{uuid4().hex[:8]}",
+        "patient_name": patient_name or "Unknown",
+        "phone": phone,
+        "doctor": "",
+        "date": "",
+        "time": "",
+        "status": "pending",
+        "transcript": "",
+        "summary": "Callback requested via web.",
+        "manager_flag": False,
     }
+    storage.insert_appointment(record)
+    return {"status": "pending", "id": record["id"], "phone": phone}
+
+
+# ── Outbound call trigger ─────────────────────────────────────────────────────
+
+@app.post("/api/call")
+async def trigger_outbound_call(
+    phone: str = Query(...),
+    appointment_id: str | None = Query(default=None),
+):
+    if not BOLNA_API_KEY or not BOLNA_AGENT_ID:
+        raise HTTPException(status_code=500, detail="Bolna credentials not configured")
+
+    payload = {
+        "agent_id": BOLNA_AGENT_ID,
+        "recipient_phone_number": phone,
+        "recipient_data": {
+            "current_date": datetime.now().strftime("%Y-%m-%d"),
+            "current_day": datetime.now().strftime("%A"),
+            "current_year": datetime.now().strftime("%Y"),
+            "appointment_id": appointment_id or "",
+        },
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"{BOLNA_BASE_URL}/call",
+            headers={
+                "Authorization": f"Bearer {BOLNA_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=15.0,
+        )
+
+    if response.status_code not in (200, 201):
+        raise HTTPException(
+            status_code=response.status_code,
+            detail=f"Bolna API error: {response.text}"
+        )
+
+    if appointment_id:
+        storage.update_appointment(appointment_id, {"status": "in_call"})
+
+    return response.json()
+
+
+# ── Seed missed calls (demo only — remove before submission) ──────────────────
+
+@app.post("/api/seed-missed")
+def seed_missed_calls():
+    missed = [
+        {
+            "id": f"apt_{uuid4().hex[:8]}",
+            "patient_name": "Ananya Sharma",
+            "phone": "9000000001",
+            "doctor": "",
+            "date": "",
+            "time": "",
+            "status": "pending",
+            "transcript": "",
+            "summary": "Callback requested via web.",
+            "manager_flag": False,
+        },
+        {
+            "id": f"apt_{uuid4().hex[:8]}",
+            "patient_name": "Ravi Kumar",
+            "phone": "9000000002",
+            "doctor": "",
+            "date": "",
+            "time": "",
+            "status": "pending",
+            "transcript": "",
+            "summary": "Callback requested via web.",
+            "manager_flag": False,
+        },
+    ]
+    for record in missed:
+        storage.insert_appointment(record)
+    return {"seeded": len(missed)}
+
+
 # ── Webhook ───────────────────────────────────────────────────────────────────
 
 @app.post("/webhook/bolna")
 async def bolna_webhook(request: Request):
     payload = await request.json()
+    print("Bolna webhook payload:", payload)  # keep for debugging
 
+    # Try extraction under data.<key> (e.g. data.appointment)
     extraction = {}
     data = payload.get("data", {})
     if isinstance(data, dict):
@@ -362,9 +507,16 @@ async def bolna_webhook(request: Request):
                 extraction = data[key]
                 break
 
+    # Fallback: some Bolna versions put extraction at top level
+    if not extraction:
+        extraction = payload
+
     phone = extraction.get("phone", "")
     patient_name = extraction.get("patient_name", "")
-    transcript = payload.get("call_details", {}).get("transcript", "")
+    transcript = (
+        payload.get("call_details", {}).get("transcript", "")
+        or payload.get("transcript", "")
+    )
     summary = extraction.get("summary", "")
     manager_flag = extraction.get("manager_flag", False)
     status = extraction.get("status", "")
@@ -386,7 +538,7 @@ async def bolna_webhook(request: Request):
         updates["summary"] = summary
     if manager_flag is not None:
         updates["manager_flag"] = manager_flag
-    if status in ("confirmed", "cancelled", "modified", "pending"):
+    if status in ("confirmed", "cancelled", "modified", "pending", "in_call"):
         updates["status"] = status
 
     if updates:
@@ -395,7 +547,7 @@ async def bolna_webhook(request: Request):
     return {"status": "ok", "appointment_id": appointment_id}
 
 
-# ── Dashboard ─────────────────────────────────────────────────────────────────
+# ── Dashboard (HTML — staff only) ─────────────────────────────────────────────
 
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(date: str | None = Query(default=None)):
@@ -407,6 +559,7 @@ def dashboard(date: str | None = Query(default=None)):
         "cancelled": "#ef4444",
         "modified": "#f59e0b",
         "pending": "#94a3b8",
+        "in_call": "#3b82f6",
     }
 
     table_rows = ""
@@ -431,9 +584,9 @@ def dashboard(date: str | None = Query(default=None)):
             f"<td>{row['id']}</td>"
             f"<td>{row['patient_name']}</td>"
             f"<td>{row['phone']}</td>"
-            f"<td>{row['doctor']}</td>"
-            f"<td>{row['date']}</td>"
-            f"<td>{row['time']}</td>"
+            f"<td>{row['doctor'] or '—'}</td>"
+            f"<td>{row['date'] or '—'}</td>"
+            f"<td>{row['time'] or '—'}</td>"
             f"<td>{badge}</td>"
             f"<td>{flag_cell}</td>"
             f"<td>{row.get('summary') or '—'}</td>"
@@ -449,7 +602,8 @@ def dashboard(date: str | None = Query(default=None)):
         body {{ font-family: Arial, Helvetica, sans-serif; padding: 24px; background: #f9fafb; }}
         h1 {{ color: #1e293b; }}
         .filter {{ margin-bottom: 16px; }}
-        table {{ border-collapse: collapse; width: 100%; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }}
+        table {{ border-collapse: collapse; width: 100%; background: #fff; border-radius: 8px;
+                 overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }}
         th, td {{ border: 1px solid #e2e8f0; padding: 10px 12px; text-align: left; vertical-align: top; }}
         th {{ background: #f1f5f9; font-size: 13px; color: #475569; }}
         td {{ font-size: 13px; color: #1e293b; }}
