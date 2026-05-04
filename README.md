@@ -136,6 +136,24 @@ Trigger an outbound call (requires Bolna env vars):
 curl -X POST "http://localhost:8000/api/call?phone=9000000001&appointment_id=apt_1234abcd"
 ```
 
+## Bolna tools (agent functions)
+
+Bolna tool definitions live under `tools/` as JSON `custom_task` configs. Each tool points to a backend endpoint and uses `%(...)s` placeholders for parameters. When running locally, update the `value.url` fields to match your current ngrok (or deployed) base URL.
+
+Key tools:
+
+| Tool name | File | Purpose | Method | Endpoint | Required params |
+| --- | --- | --- | --- | --- | --- |
+| `check_availibility` | `tools/check_availability.json` | Check slot availability by specialization | POST | `/api/availability` | `specialization`, `date`, `time` |
+| `create_booking` | `tools/create_booking.json` | Create an appointment | POST | `/api/book` | `patient_name`, `phone`, `specialization`, `date`, `time` |
+| `get_appointment` | `tools/get_appointment.json` | Lookup appointment by phone | GET | `/api/appointment` | `phone` |
+| `update_appointment` | `tools/update_appointment.json` | Update or cancel an appointment (mandatory for changes) | POST | `/api/appointment/update` | `appointment_id` (optional: `date`, `time`, `status`) |
+| `delete_appointment` | `tools/delete_appointment.json` | Delete an appointment by id | DELETE | `/api/appointment/{id}` | `appointment_id` |
+
+Notes:
+- `update_appointment` should be used for reschedules and cancellations. For cancellation, set `status=cancelled`.
+- `delete_appointment` is destructive; replace the hard-coded URL with the appointment id you intend to delete.
+
 ## Data & persistence
 
 - SQLite DB location: `data/clinic.db`
