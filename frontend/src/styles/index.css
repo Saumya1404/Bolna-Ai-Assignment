@@ -295,6 +295,63 @@ p {
   gap: 16px;
 }
 
+.doctor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.doctor-card {
+  padding: 18px;
+  border-radius: 18px;
+  background: var(--paper-strong);
+  border: 1px solid rgba(21, 19, 18, 0.1);
+  display: grid;
+  gap: 14px;
+}
+
+.doctor-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.doctor-card__name {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.doctor-card__spec {
+  color: var(--ink-muted);
+  font-weight: 600;
+}
+
+.doctor-card__meta {
+  display: grid;
+  gap: 12px;
+}
+
+.schedule-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.schedule-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(28, 111, 122, 0.12);
+  color: var(--accent-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.schedule-chip--time {
+  background: rgba(195, 90, 43, 0.15);
+  color: var(--accent);
+}
+
 .info-card {
   padding: 18px;
   border-radius: 16px;

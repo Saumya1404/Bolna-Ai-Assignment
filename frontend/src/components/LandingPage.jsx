@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { lookupAppointment, requestCallback } from '../api';
+import { fetchDoctors, lookupAppointment, requestCallback } from '../api';
 import Toast from './Toast';
 import { statusClass, statusLabel } from './status';
 
@@ -45,6 +45,8 @@ function LandingPage() {
   const [lookupStatus, setLookupStatus] = useState('idle');
   const [isSending, setIsSending] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [doctors, setDoctors] = useState([]);
+  const [doctorsStatus, setDoctorsStatus] = useState('idle');
   const [toast, setToast] = useState({ message: '', variant: 'neutral' });
 
   const showToast = (message, variant = 'neutral') => {
@@ -58,6 +60,22 @@ function LandingPage() {
     }, 3600);
     return () => clearTimeout(timer);
   }, [toast.message]);
+
+  const loadDoctors = async () => {
+    try {
+      setDoctorsStatus('loading');
+      const response = await fetchDoctors();
+      setDoctors(response.data?.doctors || []);
+      setDoctorsStatus('ready');
+    } catch (error) {
+      setDoctorsStatus('error');
+      showToast(getErrorMessage(error), 'error');
+    }
+  };
+
+  useEffect(() => {
+    loadDoctors();
+  }, []);
 
   const handleCallbackSubmit = async (event) => {
     event.preventDefault();
@@ -118,6 +136,7 @@ function LandingPage() {
         </div>
         <nav className="topbar__nav">
           <a className="link" href="#services">Services</a>
+          <a className="link" href="#doctors">Doctors</a>
           <a className="link" href="#lookup">Lookup</a>
           <a className="button button--ghost" href="/dashboard">Staff Dashboard</a>
         </nav>
@@ -225,6 +244,73 @@ function LandingPage() {
                   </div>
                 </div>
                 <p className="muted">{lookupResult.summary || 'We will send you a confirmation soon.'}</p>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="section" id="doctors">
+          <div className="section__header">
+            <div>
+              <p className="eyebrow">Clinic roster</p>
+              <h2>Doctors and schedules</h2>
+              <p className="muted">Browse available days and hours before requesting a callback.</p>
+            </div>
+            {doctorsStatus === 'loading' && <span className="status-pill">Loading roster...</span>}
+          </div>
+          <div className="panel">
+            {doctorsStatus === 'error' ? (
+              <p className="empty-state">We could not load the doctors list right now.</p>
+            ) : doctors.length === 0 ? (
+              <p className="empty-state">No doctors are listed yet. Please check back soon.</p>
+            ) : (
+              <div className="doctor-grid">
+                {doctors.map((doctor) => (
+                  <article className="doctor-card" key={doctor.id || doctor.name}>
+                    <div className="doctor-card__header">
+                      <div>
+                        <div className="doctor-card__name">{doctor.name || 'Doctor'}</div>
+                        <div className="doctor-card__spec">{doctor.specialization || 'Specialist'}</div>
+                      </div>
+                      <span className="badge badge--info">
+                        {Number.isFinite(doctor.fee) ? `INR ${doctor.fee}` : 'Fees vary'}
+                      </span>
+                    </div>
+                    <div className="doctor-card__meta">
+                      <div>
+                        <span className="label">Available days</span>
+                        <div className="schedule-chips">
+                          {doctor.available_days?.length ? (
+                            doctor.available_days.map((day) => (
+                              <span className="schedule-chip" key={`${doctor.id || doctor.name}-day-${day}`}>
+                                {day}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="schedule-chip">By appointment</span>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="label">Hours</span>
+                        <div className="schedule-chips">
+                          {doctor.available_hours?.length ? (
+                            doctor.available_hours.map((range) => (
+                              <span
+                                className="schedule-chip schedule-chip--time"
+                                key={`${doctor.id || doctor.name}-time-${range}`}
+                              >
+                                {range}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="schedule-chip schedule-chip--time">On request</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                ))}
               </div>
             )}
           </div>

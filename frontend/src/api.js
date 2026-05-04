@@ -31,3 +31,4 @@ export const triggerCall = (phone, id) => {
 
 export const cancelAppointment = (id) => API.post(`/api/appointment/${id}/cancel`);
 export const fetchAppointments = (params) => API.get('/api/appointments', { params });
+export const fetchDoctors = (params) => API.get('/api/doctors', { params });
