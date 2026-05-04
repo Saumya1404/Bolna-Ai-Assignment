@@ -1,0 +1,27 @@
+{
+  "name": "get_appointment",
+  "description": "Called when user asks to get appointment details by phone number",
+  "pre_call_message": "Let me check that for you",
+  "parameters": {
+    "type": "object",
+    "required": [
+      "phone"
+    ],
+    "properties": {
+      "phone": {
+        "type": "string"
+      }
+    }
+  },
+  "key": "custom_task",
+  "value": {
+    "method": "GET",
+    "param": {
+      "phone": "%(phone)s",
+      "https://postdigital-athena-apophthegmatical.ngrok-free.dev/api/appointment?phone": "9876543210"
+    },
+    "url": "https://postdigital-athena-apophthegmatical.ngrok-free.dev/api/appointment?phone=9876543210",
+    "api_token": null,
+    "headers": {}
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "name": "create_booking",
+  "description": "Should be called when user wants to book an appointment with details like patient name, phone, specialization, date, and time",
+  "pre_call_message": "One moment while I fetch the details",
+  "parameters": {
+    "type": "object",
+    "required": [
+      "patient_name",
+      "phone",
+      "specialization",
+      "date",
+      "time"
+    ],
+    "properties": {
+      "date": {
+        "type": "string"
+      },
+      "time": {
+        "type": "string"
+      },
+      "phone": {
+        "type": "string"
+      },
+      "patient_name": {
+        "type": "string"
+      },
+      "specialization": {
+        "type": "string"
+      }
+    }
+  },
+  "key": "custom_task",
+  "value": {
+    "method": "POST",
+    "param": {
+      "date": "%(date)s",
+      "time": "%(time)s",
+      "phone": "%(phone)s",
+      "patient_name": "%(patient_name)s",
+      "specialization": "%(specialization)s"
+    },
+    "url": "https://postdigital-athena-apophthegmatical.ngrok-free.dev/api/book",
+    "api_token": null,
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

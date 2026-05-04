@@ -1,0 +1,20 @@
+{
+  "name": "delete_appointment",
+  "description": "When user asks to delete a specific appointment by ID",
+  "pre_call_message": "One moment while I delete the appointment",
+  "parameters": {
+    "type": "object",
+    "required": [],
+    "properties": {}
+  },
+  "key": "custom_task",
+  "value": {
+    "method": "DELETE",
+    "param": {
+      "https://postdigital-athena-apophthegmatical.ngrok-free.dev/api/appointment/apt_d07f27c1": ""
+    },
+    "url": "https://postdigital-athena-apophthegmatical.ngrok-free.dev/api/appointment/apt_d07f27c1",
+    "api_token": null,
+    "headers": {}
+  }
+}

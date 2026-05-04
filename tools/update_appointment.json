@@ -1,0 +1,47 @@
+
+{
+  "name": "update_appointment",
+  "description": "MANDATORY. Use this to cancel or reschedule an existing appointment. This is the ONLY way to change an appointment. Requires appointment_id from get_appointment. For cancellation send status=cancelled. For reschedule send date and time.",
+  "pre_call_message": "One moment while I update that for you.",
+  "parameters": {
+    "type": "object",
+    "required": [
+      "appointment_id"
+    ],
+    "properties": {
+      "date": {
+        "type": "string",
+        "description": "YYYY-MM-DD"
+      },
+      "time": {
+        "type": "string",
+        "description": "HH:MM"
+      },
+      "status": {
+        "enum": [
+          "cancelled",
+          "modified"
+        ],
+        "type": "string"
+      },
+      "appointment_id": {
+        "type": "string"
+      }
+    }
+  },
+  "key": "custom_task",
+  "value": {
+    "method": "POST",
+    "param": {
+      "date": "%(date)s",
+      "time": "%(time)s",
+      "status": "%(status)s",
+      "appointment_id": "%(appointment_id)s"
+    },
+    "url": "https://postdigital-athena-apophthegmatical.ngrok-free.dev/api/appointment/update",
+    "api_token": null,
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}
