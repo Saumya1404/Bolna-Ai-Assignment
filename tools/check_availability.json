@@ -1,0 +1,38 @@
+{
+  "name": "check_availibility",
+  "description": "Called when user asks to check availability for a specific specialization, date, and time",
+  "pre_call_message": "One moment while I fetch the availability",
+  "parameters": {
+    "type": "object",
+    "required": [
+      "specialization",
+      "date",
+      "time"
+    ],
+    "properties": {
+      "date": {
+        "type": "string"
+      },
+      "time": {
+        "type": "string"
+      },
+      "specialization": {
+        "type": "string"
+      }
+    }
+  },
+  "key": "custom_task",
+  "value": {
+    "method": "POST",
+    "param": {
+      "date": "%(date)s",
+      "time": "%(time)s",
+      "specialization": "%(specialization)s"
+    },
+    "url": "https://postdigital-athena-apophthegmatical.ngrok-free.dev/api/availability",
+    "api_token": null,
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}
